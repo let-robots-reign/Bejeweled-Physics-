@@ -6,16 +6,18 @@ width, height = 1200, 1000
 size = width, height
 screen = pygame.display.set_mode(size)
 symbols = {0: 'symbol0.png', 1: 'symbol1.png', 2: 'symbol2.png', 3: 'symbol3.png', 4: 'symbol4.png', 5: 'symbol5.png',
-           6: 'symbol6.png'}
-numbers_to_letters = {0: '*', 1: '/', 2: 'π', 3: 'm', 4: 'g', 5: 'I', 6: 'U'}
-formulas = ['m*g', 'U/I']
+           6: 'symbol6.png', 7: 'symbol7.png', 8: 'symbol8.png', 9: 'symbol9.png', 10: 'symbol10.png',
+           11: 'symbol11.png', 12: 'symbol12.png'}  # convert board values to images
+numbers_to_letters = {0: '*', 1: '/', 2: 'π', 3: 'm', 4: 'g', 5: 'I', 6: 'U', 7: 'S', 8: 't', 9: 'v', 10: 'a', 11: 'V',
+                      12: 'p'}  # convert board values to letters
+formulas = ['m*g', 'U/I', 'S/v', 'S/t', 'v*t', 'v/t', 'a*t', 'p*V', 'm/V', 'm/p', 'm*a', 'm*v']  # formulas to be in the game
 
 
 class Board:
     def __init__(self, width, height):
         self.width = width
         self.height = height
-        self.board = [[-1 for _ in range(width)] for _ in range(height)]
+        self.board = [[-1 for _ in range(width)] for _ in range(height)]  # -1 is an empty cell
         self.left = 120
         self.top = 20
         self.cell_size = 64
@@ -29,7 +31,7 @@ class Board:
 class Bejeweled(Board):
     def __init__(self, width, height):
         super().__init__(width, height)
-        self.pressed = ()
+        self.pressed = ()  # coords of the pressed cell
 
         for i in range(30):  # 30 multiplications
             x, y = self.random_coords()
@@ -46,7 +48,7 @@ class Bejeweled(Board):
         for y in range(self.height):
             for x in range(self.width):
                 if self.board[y][x] == -1:
-                    self.board[y][x] = random.randint(2, len(symbols) - 1)
+                    self.board[y][x] = random.randint(2, len(symbols) - 1)  # random value from the list
 
     def random_coords(self):
         return random.randint(0, self.width - 1), random.randint(0, self.height - 1)
@@ -99,16 +101,18 @@ class Bejeweled(Board):
 
     def on_click(self, cell):
         if cell == self.pressed:
-            self.pressed = ()
+            self.pressed = ()  # second pressing makes the cell inactive
         else:
             if self.pressed:
-                if abs(cell[0] - self.pressed[0]) <= 1 and abs(cell[1] - self.pressed[1]) <= 1:
+                # swapping
+                if abs(cell[0] - self.pressed[0]) <= 1 and abs(cell[1] - self.pressed[1]) <= 1 \
+                        and (abs(cell[0] - self.pressed[0]) == 0 or abs(cell[1] - self.pressed[1]) == 0):
                     self.board[self.pressed[1]][self.pressed[0]], self.board[cell[1]][cell[0]] = self.board[cell[1]][cell[0]], self.board[self.pressed[1]][self.pressed[0]]
-                    self.pressed = ()
+                    self.pressed = ()  # cell is inactive
                 else:
-                    self.pressed = ()
+                    self.pressed = ()  # cell is inactive after swapping
             else:
-                self.pressed = cell
+                self.pressed = cell  # cell is active
 
 
 board = Bejeweled(15, 15)
