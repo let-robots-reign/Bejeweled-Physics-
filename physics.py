@@ -1,5 +1,6 @@
 import pygame
 import random
+from gui import *
 
 pygame.init()
 width, height = 1200, 1000
@@ -14,7 +15,41 @@ numbers_to_letters = {-1: 'X', 0: '*', 1: '/', 2: 'π', 3: 'm', 4: 'g', 5: 'I', 
 formulas = ['m*g', 'U/I', 'S/v', 'S/t', 'v*t', 'v/t', 'a*t', 'p*V', 'm/V', 'm/p', 'm*a', 'm*v']  # formulas to be in the game
 game_sounds = {'swap': pygame.mixer.Sound('data/swap.wav'), 'match': [pygame.mixer.Sound('data/match1.wav'),
               pygame.mixer.Sound('data/match2.wav'), pygame.mixer.Sound('data/match3.wav'),
-              pygame.mixer.Sound('data/match4.wav'), pygame.mixer.Sound('data/match5.wav')]}
+              pygame.mixer.Sound('data/match4.wav'), pygame.mixer.Sound('data/match5.wav')]}  # sounds to be played after an action
+
+
+def pre_check_mathes(board):
+    rotated_board = list(map(list, zip(*board)))
+    for y in range(len(board)):
+        sy = ''.join([numbers_to_letters[x] for x in board[y]])
+        for x in range(len(board[y])):
+            sx = ''.join([numbers_to_letters[x] for x in rotated_board[x]])
+            for formula in formulas:
+                if formula in sx:
+                    board[sx.find(formula)][x] = random.randint(0, 2)
+
+        for formula in formulas:
+            if formula in sy:
+                board[y][sy.find(formula)] = random.randint(0, 2)
+
+    return board
+
+
+class AnimatedSprite(pygame.sprite.Sprite):
+    def __init__(self, group, x, y):
+        super().__init__(group)
+        self.frame_index = 0
+        self.image = pygame.image.load('data/atom_animation/atom%s.gif' % self.frame_index)
+        self.rect = self.image.get_rect()
+        self.rect.x = x
+        self.rect.y = y
+        self.clock = pygame.time.Clock()
+        self.fps = 30
+
+    def update(self):
+        self.frame_index = (self.frame_index + 1) % 40  # 40 - number of frames
+        self.image = pygame.image.load('data/atom_animation/atom%s.gif' % self.frame_index)
+        self.clock.tick(self.fps)
 
 
 class Board:
@@ -124,10 +159,46 @@ class Bejeweled(Board):
 
 
 board = Bejeweled(15, 15)
+board.board = pre_check_mathes(board.board)
+screen_color = pygame.Color('white')
+gui = GUI()
+gui.add_element(Label((300, 250, 150, 70), 'Memorize with Physjeweled!', background_color=-1))
+play = Button((550, 450, 100, 50), 'Play', background_color=pygame.Color('lightblue'))
+gui.add_element(play)
+rules = Button((550, 520, 100, 50), 'Rules', background_color=pygame.Color('lightblue'))
+gui.add_element(rules)
+exit = Button((550, 590, 100, 50), 'Exit', background_color=pygame.Color('lightblue'))
+gui.add_element(exit)
+all_sprites = pygame.sprite.Group()
+AnimatedSprite(all_sprites, width // 2 + 175, height // 2 - 175)
+
 running = True
+menu = True
+
+while menu and running:
+    screen.fill(screen_color)
+    for event in pygame.event.get():
+        if event.type == pygame.QUIT:
+            running = False
+        gui.get_event(event)
+
+    if play.pressed:
+        menu = False
+    elif rules.pressed:
+        menu = False
+    elif exit.pressed:
+        running = False
+
+    gui.render(screen)
+    gui.update()
+    all_sprites.draw(screen)
+    all_sprites.update()
+    pygame.display.flip()
+
+screen_color = pygame.Color('lightblue')
 
 while running:
-    screen.fill(pygame.Color('lightblue'))
+    screen.fill(screen_color)
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             running = False
