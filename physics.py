@@ -18,7 +18,7 @@ game_sounds = {'swap': pygame.mixer.Sound('data/swap.wav'), 'match': [pygame.mix
               pygame.mixer.Sound('data/match4.wav'), pygame.mixer.Sound('data/match5.wav')]}  # sounds to be played after an action
 
 
-def pre_check_mathes(board):
+def pre_check_matches(board):  # eliminating all matches before starting
     rotated_board = list(map(list, zip(*board)))
     for y in range(len(board)):
         sy = ''.join([numbers_to_letters[x] for x in board[y]])
@@ -26,11 +26,13 @@ def pre_check_mathes(board):
             sx = ''.join([numbers_to_letters[x] for x in rotated_board[x]])
             for formula in formulas:
                 if formula in sx:
-                    board[sx.find(formula)][x] = random.randint(0, 2)
+                    #  if match found, replace the first item with multiplication or division sign
+                    board[sx.find(formula)][x] = random.randint(0, 1)
 
         for formula in formulas:
             if formula in sy:
-                board[y][sy.find(formula)] = random.randint(0, 2)
+                # the same, but horizontally
+                board[y][sy.find(formula)] = random.randint(0, 1)
 
     return board
 
@@ -101,45 +103,58 @@ class Bejeweled(Board):
         if cell:
             self.on_click(cell)
 
-    def render(self):
-        rotated_board = list(map(list, zip(*self.board)))
+    def shift_tiles_down(self):
+        board = list(map(list, zip(*self.board)))  # zipping the board to iterate its columns
+        for y in range(len(board)):
+            if -1 in board[y]:
+                # shifting
+                board[y] = [-1] * board[y].count(-1) + board[y][:board[y].index(-1)] + board[y][board[y].index(-1) + board[y].count(-1):]
+                for i in range(board[y].count(-1)):
+                    board[y][i] = random.randint(0, len(symbols) - 1) # refilling
+        board = list(map(list, zip(*board)))  # zip the board back
+        return board
+
+    def mainloop(self):
+        rotated_board = list(map(list, zip(*self.board)))  # zipping the board to iterate its columns
         for y in range(self.height):
             sy = ''.join([numbers_to_letters[x] for x in self.board[y]])
             for x in range(self.width):
                 sx = ''.join([numbers_to_letters[x] for x in rotated_board[x]])
-                for formula in formulas:
+                for formula in formulas:  # finding vertical matches
                     if formula in sx:
                         sound_index = random.randint(0, 4)
                         game_sounds['match'][sound_index].play()
-                        pygame.draw.rect(screen, pygame.Color('red'),
-                                         (x * self.cell_size + self.left,
-                                          sx.find(formula) * self.cell_size + self.top,
-                                          self.cell_size, self.cell_size * len(formula)), 3)
+                        # pygame.draw.rect(screen, pygame.Color('red'),
+                        #                  (x * self.cell_size + self.left,
+                        #                   sx.find(formula) * self.cell_size + self.top,
+                        #                   self.cell_size, self.cell_size * len(formula)), 3)
                         for i in range(len(formula)):
                             self.board[sx.find(formula) + i][x] = -1
 
-                if self.board[y][x] != -1:
+                if self.board[y][x] != -1:  # blitting the picture
                     img = pygame.image.load(symbols[self.board[y][x]])
                     screen.blit(img, (x * self.cell_size + self.left, y * self.cell_size + self.top))
 
-                pygame.draw.rect(screen, pygame.Color('white'),
+                pygame.draw.rect(screen, pygame.Color('white'),  # drawing cells
                     (x * self.cell_size + self.left, y * self.cell_size + self.top, self.cell_size, self.cell_size), 1)
 
-            for formula in formulas:
+            for formula in formulas:  # finding horizontal matches
                 if formula in sy:
                     sound_index = random.randint(0, 4)
                     game_sounds['match'][sound_index].play()
-                    pygame.draw.rect(screen, pygame.Color('red'),
-                                     (sy.find(formula) * self.cell_size + self.left,
-                                      y * self.cell_size + self.top,
-                                      self.cell_size * len(formula), self.cell_size), 3)
+                    # pygame.draw.rect(screen, pygame.Color('red'),
+                    #                  (sy.find(formula) * self.cell_size + self.left,
+                    #                   y * self.cell_size + self.top,
+                    #                   self.cell_size * len(formula), self.cell_size), 3)
                     for i in range(len(formula)):
                         self.board[y][sy.find(formula) + i] = -1
 
-        if self.pressed:
+        if self.pressed:  # framing of the pressed cell
             pygame.draw.rect(screen, pygame.Color('red'),
                              (self.pressed[0] * self.cell_size + self.left, self.pressed[1] * self.cell_size + self.top,
                               self.cell_size, self.cell_size), 3)
+
+        self.board = self.shift_tiles_down()  # shifting the tiles
 
     def on_click(self, cell):
         if cell == self.pressed:
@@ -158,8 +173,8 @@ class Bejeweled(Board):
                 self.pressed = cell  # cell is active
 
 
-board = Bejeweled(15, 15)
-board.board = pre_check_mathes(board.board)
+board = Bejeweled(12, 12)
+board.board = pre_check_matches(board.board)
 screen_color = pygame.Color('white')
 gui = GUI()
 gui.add_element(Label((300, 250, 150, 70), 'Memorize with Physjeweled!', background_color=-1))
@@ -205,7 +220,7 @@ while running:
         if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
             board.get_click(event.pos)
 
-    board.render()
+    board.mainloop()
     pygame.display.flip()
 
 pygame.quit()
