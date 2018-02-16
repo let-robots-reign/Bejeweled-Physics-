@@ -7,6 +7,9 @@ class GUI:
     def __init__(self):
         self.elements = []
 
+    def clear(self):
+        self.elements.clear()
+
     def add_element(self, element):
         self.elements.append(element)
 
