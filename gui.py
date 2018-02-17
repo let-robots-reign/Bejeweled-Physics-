@@ -33,13 +33,19 @@ class GUI:
 
 
 class Label:
-    def __init__(self, rect, text, text_color=pygame.Color('black'), background_color=pygame.Color('white')):
+    def __init__(self, rect, text, text_color=pygame.Color('black'), background_color=pygame.Color('white'),
+                 font_size=None, x=None, y=None):
         self.rect = pygame.Rect(rect)
         self.text = text
         self.text_color = text_color
         self.background_color = background_color
-        # Calculating the font's size
-        self.font = pygame.font.Font(None, self.rect.height - 4)
+        self.x = self.rect.x + 2 if x is None else x
+        self.y = self.rect.y + 2 if y is None else y
+        if font_size is None:
+            # Calculating the font's size
+            self.font = pygame.font.Font(None, self.rect.height - 4)
+        else:
+            self.font = pygame.font.Font(None, font_size)
         self.rendered_text = None
         self.rendered_rect = None
 
@@ -48,14 +54,30 @@ class Label:
             surface.fill(screen_color, self.rect)
         else:
             surface.fill(self.background_color, self.rect)
-        self.rendered_text = self.font.render(self.text, 1, self.text_color)
-        self.rendered_rect = self.rendered_text.get_rect(x=self.rect.x + 2, centery=self.rect.centery)
-        surface.blit(self.rendered_text, self.rendered_rect)
+        words = [word.split(' ') for word in self.text.splitlines()]  # 2D array where each row is a list of words.
+        space = self.font.size(' ')[0]  # The width of a space.
+        max_width, max_height = surface.get_size()
+        x, y = self.x, self.y
+        for line in words:
+            for word in line:
+                word_surface = self.font.render(word, 1, self.text_color)
+                word_width, word_height = word_surface.get_size()
+                if x + word_width >= max_width - 100:
+                    x = self.x  # Reset the x.
+                    y += word_height  # Start on new row.
+                surface.blit(word_surface, (x, y))
+                x += word_width + space
+            x = self.x  # Reset the x.
+            y += word_height  # Start on new row.
+        # self.rendered_text = self.font.render(self.text, 1, self.text_color)
+        # self.rendered_rect = self.rendered_text.get_rect(x=self.x, y=self.y)
+        # surface.blit(self.rendered_text, self.rendered_rect)
 
 
 class Button(Label):
-    def __init__(self, rect, text, text_color=pygame.Color('black'), background_color=pygame.Color('blue')):
-        super().__init__(rect, text)
+    def __init__(self, rect, text, text_color=pygame.Color('black'), background_color=pygame.Color('blue'),
+                 font_size=None):
+        super().__init__(rect, text, font_size)
         self.font_color = text_color
         self.bgcolor = background_color
         # при создании кнопка не нажата
