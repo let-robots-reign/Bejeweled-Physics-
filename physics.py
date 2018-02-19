@@ -22,23 +22,6 @@ game_sounds = {'swap': pygame.mixer.Sound('data/swap.wav'), 'match': [pygame.mix
               pygame.mixer.Sound('data/match4.wav'), pygame.mixer.Sound('data/match5.wav')]}  # sounds to be played after an action
 
 
-def pre_check_matches(board):  # eliminating all matches before starting
-    rotated_board = list(map(list, zip(*board)))
-    for y in range(len(board)):
-        sy = ''.join([numbers_to_letters[x] for x in board[y]])
-        sx = ''.join([numbers_to_letters[x] for x in rotated_board[y]])
-        for formula in formulas:
-            if formula in sx:
-                #  if match found, replace the first item with multiplication or division sign
-                board[sx.find(formula)][y] = random.randint(0, 1)
-
-            elif formula in sy:
-                # the same, but horizontally
-                board[y][sy.find(formula)] = random.randint(0, 1)
-
-    return board
-
-
 class AnimatedSprite(pygame.sprite.Sprite):
     def __init__(self, group, x, y):
         super().__init__(group)
@@ -54,6 +37,29 @@ class AnimatedSprite(pygame.sprite.Sprite):
         self.frame_index = (self.frame_index + 1) % 40  # 40 - number of frames
         self.image = pygame.image.load('data/atom_animation/atom%s.gif' % self.frame_index)
         self.clock.tick(self.fps)
+
+
+class LangButton(pygame.sprite.Sprite):
+    def __init__(self, group, x, y):
+        super().__init__(group)
+        self.image = pygame.image.load('data/eng.png')
+        self.rect = self.image.get_rect()
+        self.rect.x = x
+        self.rect.y = y
+        self.pressed = False
+
+    def update(self):
+        if self.pressed:
+            print('pressed')
+            self.image = pygame.image.load('data/rus.png')
+        else:
+            print('unpressed')
+            self.image = pygame.image.load('data/eng.png')
+
+    def get_event(self, event):
+        if self.rect.collidepoint(event.pos):
+            print(1)
+            self.pressed = not self.pressed
 
 
 class Board:
@@ -203,6 +209,23 @@ class Bejeweled(Board):
                 self.pressed = cell  # cell is active
 
 
+def pre_check_matches(board):  # eliminating all matches before starting
+    rotated_board = list(map(list, zip(*board)))
+    for y in range(len(board)):
+        sy = ''.join([numbers_to_letters[x] for x in board[y]])
+        sx = ''.join([numbers_to_letters[x] for x in rotated_board[y]])
+        for formula in formulas:
+            if formula in sx:
+                #  if match found, replace the first item with multiplication or division sign
+                board[sx.find(formula)][y] = random.randint(0, 1)
+
+            elif formula in sy:
+                # the same, but horizontally
+                board[y][sy.find(formula)] = random.randint(0, 1)
+
+    return board
+
+
 def terminate():
     pygame.quit()
     sys.exit()
@@ -279,61 +302,9 @@ def game_over():
 
 
 def main():
-    rules.pressed = False
-    play.pressed = False
-    back.pressed = False
-    gui.clear()
-    gui.add_element(logo)
-    gui.add_element(play)
-    gui.add_element(rules)
-    gui.add_element(exit)
-
+    global logo, play, rules, exit, back, fail, try_again, info
     while True:
-        screen.fill(pygame.Color('lightblue'))
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                terminate()
-            gui.get_event(event)
-
-        if play.pressed:
-            game()
-        elif rules.pressed:
-            description()
-        elif exit.pressed:
-            terminate()
-
-        gui.render(screen)
-        all_sprites.draw(screen)
-        all_sprites.update()
-        pygame.display.flip()
-
-
-board = Bejeweled(12, 12)
-board.board = pre_check_matches(board.board)
-
-all_sprites = pygame.sprite.Group()
-AnimatedSprite(all_sprites, width // 2 + 175, height // 2 - 160)
-
-if __name__ == "__main__":
-    gui = GUI()
-    choose_lang = Label((100, 100, 1000, 750), 'Choose the\n  language', background_color=pygame.Color('white'),
-                        font_size=100, x=410, y=150)
-    rus = Button((525, 450, 150, 50), 'Русский', background_color=pygame.Color('lightblue'))
-    eng = Button((525, 590, 150, 50), 'English', background_color=pygame.Color('lightblue'))
-
-    gui.add_element(choose_lang)
-    gui.add_element(rus)
-    gui.add_element(eng)
-
-    while True:
-        screen.fill(pygame.Color('lightblue'))
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                terminate()
-            gui.get_event(event)
-
-        if rus.pressed:
-            lang = 'rus'
+        if lang.pressed:
             logo = Label((100, 100, 1000, 750), 'Запоминай с Physjeweled!', background_color=pygame.Color('white'),
                          font_size=70, x=290, y=250)
             play = Button((520, 450, 140, 50), 'Играть', background_color=pygame.Color('lightblue'))
@@ -351,9 +322,14 @@ if __name__ == "__main__":
                          'а каждое перемещение, начиная со второго, отнимает все больше очков. \n    '
                          'Наслаждайтесь игрой!',
                          background_color=pygame.Color('white'), font_size=70)
-            main()
-        elif eng.pressed:
-            lang = 'eng'
+
+            gui.clear()
+            gui.add_element(logo)
+            gui.add_element(play)
+            gui.add_element(rules)
+            gui.add_element(exit)
+
+        else:
             logo = Label((100, 100, 1000, 750), 'Memorize with Physjeweled!', background_color=pygame.Color('white'),
                          font_size=70, x=280, y=250)
             play = Button((550, 450, 100, 50), 'Play', background_color=pygame.Color('lightblue'))
@@ -372,7 +348,45 @@ if __name__ == "__main__":
                          'and 5 seconds of additional time, while each swipe, starting from the second, '
                          'takes off more and more points. \n    Enjoy!',
                          background_color=pygame.Color('white'), font_size=70)
-            main()
+
+            gui.clear()
+            gui.add_element(logo)
+            gui.add_element(play)
+            gui.add_element(rules)
+            gui.add_element(exit)
+
+        screen.fill(pygame.Color('lightblue'))
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                terminate()
+            if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
+                lang.get_event(event)
+            gui.get_event(event)
+
+        if play.pressed:
+            play.pressed = False
+            game()
+        elif rules.pressed:
+            rules.pressed = False
+            description()
+        elif exit.pressed:
+            exit.pressed = False
+            terminate()
 
         gui.render(screen)
+        gui.update()
+        all_sprites.draw(screen)
+        all_sprites.update()
         pygame.display.flip()
+
+
+board = Bejeweled(12, 12)
+board.board = pre_check_matches(board.board)
+
+all_sprites = pygame.sprite.Group()
+AnimatedSprite(all_sprites, width // 2 + 175, height // 2 - 160)
+lang = LangButton(all_sprites, 1050, 10)
+gui = GUI()
+
+if __name__ == "__main__":
+    main()
