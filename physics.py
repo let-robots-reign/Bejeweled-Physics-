@@ -10,12 +10,14 @@ screen = pygame.display.set_mode(size)
 symbols = {0: 'data/symbol0.png', 1: 'data/symbol1.png', 2: 'data/symbol2.png', 3: 'data/symbol3.png',
            4: 'data/symbol4.png', 5: 'data/symbol5.png', 6: 'data/symbol6.png', 7: 'data/symbol7.png',
            8: 'data/symbol8.png', 9: 'data/symbol9.png', 10: 'data/symbol10.png', 11: 'data/symbol11.png',
-           12: 'data/symbol12.png'}  # convert board values to images
+           12: 'data/symbol12.png', 13: 'data/symbol13.png', 14: 'data/symbol14.png', 15: 'data/symbol15.png',
+           16: 'data/symbol16.png', 17: 'data/symbol17.png'}  # convert board values to images
 
-numbers_to_letters = {-1: 'X', 0: '*', 1: '/', 2: 'π', 3: 'm', 4: 'g', 5: 'I', 6: 'U', 7: 'S', 8: 't', 9: 'v', 10: 'a',
-                      11: 'V', 12: 'p'}  # convert board values to letters
+numbers_to_letters = {-1: 'X', 0: '*', 1: '/', 2: 'F', 3: 'm', 4: 'g', 5: 'I', 6: 'U', 7: 'S', 8: 't', 9: 'v', 10: 'a',
+                      11: 'V', 12: 'p', 13: 'h', 14: 'N', 15: 'μ', 16: 'k', 17: 'x'}  # convert board values to letters
 
-formulas = ['m*g', 'U/I', 'S/v', 'S/t', 'v*t', 'v/t', 'a*t', 'p*V', 'm/V', 'm/p', 'm*a', 'm*v']  # formulas to be in the game
+formulas = ['m*g', 'U/I', 'S/v', 'S/t', 'v*t', 'v/t', 'a*t', 'p*V', 'm/V', 'm/p', 'm*a', 'm*v', 'F/S', 'F/m', 'F/a',
+            'F*t', 'F*S', 'N*t', 'N*μ', 'k*x', 'F/x', 'F/k', 'F*x', 'p*g*h', 'p*g*V', 'm*g*h']  # formulas to be in the game
 
 game_sounds = {'swap': pygame.mixer.Sound('data/swap.wav'), 'match': [pygame.mixer.Sound('data/match1.wav'),
               pygame.mixer.Sound('data/match2.wav'), pygame.mixer.Sound('data/match3.wav'),
@@ -343,6 +345,7 @@ def game():  # game process
 
 
 def game_over():  # 'game over' screen
+    gui.clear()
     gui.add_element(fail)
     gui.add_element(try_again)
     gui.add_element(exit)
@@ -356,11 +359,18 @@ def game_over():  # 'game over' screen
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 terminate()
-            if event.type == pygame.MOUSEBUTTONDOWN and event.type == 1:
+            if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
                 lang.get_event(event)
+                gui.clear()
                 gui.add_element(fail)
                 gui.add_element(try_again)
                 gui.add_element(exit)
+                if lang.pressed:
+                    gui.add_element(
+                        Label((100, 200, 200, 50), 'Ваш счет: %d' % board.score, background_color=-1, x=500, y=250))
+                else:
+                    gui.add_element(
+                        Label((100, 200, 200, 50), 'Your Score: %d' % board.score, background_color=-1, x=500, y=250))
 
             gui.get_event(event)
 
