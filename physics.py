@@ -14,10 +14,11 @@ symbols = {0: 'data/symbol0.png', 1: 'data/symbol1.png', 2: 'data/symbol2.png', 
            16: 'data/symbol16.png', 17: 'data/symbol17.png'}  # convert board values to images
 
 numbers_to_letters = {-1: 'X', 0: '*', 1: '/', 2: 'F', 3: 'm', 4: 'g', 5: 'I', 6: 'U', 7: 'S', 8: 't', 9: 'v', 10: 'a',
-                      11: 'V', 12: 'p', 13: 'h', 14: 'N', 15: 'μ', 16: 'k', 17: 'x'}  # convert board values to letters
+                      11: 'V', 12: 'p', 13: 'h', 14: 'N', 15: 'R', 16: 'q', 17: 'A'}  # convert board values to letters
 
-formulas = ['m*g', 'U/I', 'S/v', 'S/t', 'v*t', 'v/t', 'a*t', 'p*V', 'm/V', 'm/p', 'm*a', 'm*v', 'F/S', 'F/m', 'F/a',
-            'F*t', 'F*S', 'N*t', 'N*μ', 'k*x', 'F/x', 'F/k', 'F*x', 'p*g*h', 'p*g*V', 'm*g*h']  # formulas to be in the game
+formulas = ['m*g', 'U/I', 'U/R', 'I*R', 'q/t', 'I*t', 'q/I', 'A/q', 'U*q', 'A/U', 'A/t', 'S/v', 'S/t', 'v*t', 'v/t',
+            'a*t', 'g*t', 'p*V', 'm/V', 'm/p', 'm*a', 'm*v', 'q*m', 'F/S', 'F/m', 'F/a', 'F*t', 'F*S', 'A/F', 'A/S',
+            'N*t', 'A/N', 'p*g*h', 'p*g*V', 'm*g*h', 'I*U*t']  # formulas to be in the game
 
 game_sounds = {'swap': pygame.mixer.Sound('data/swap.wav'), 'match': [pygame.mixer.Sound('data/match1.wav'),
               pygame.mixer.Sound('data/match2.wav'), pygame.mixer.Sound('data/match3.wav'),
@@ -89,7 +90,7 @@ class Bejeweled(Board):
         self.dt = 0  # delta
         self.clock = None  # clock initializing is in game()
 
-        for i in range(30):  # 30 multiplications
+        for i in range(25):  # 25 multiplications
             x, y = self.random_coords()
             while self.board[y][x] != -1:  # to avoid repetition
                 x, y = self.random_coords()
@@ -106,15 +107,17 @@ class Bejeweled(Board):
                 if self.board[y][x] == -1:
                     self.board[y][x] = random.randint(2, len(symbols) - 1)  # random value from the list
 
+        self.board = self.pre_check_matches()
+
     def random_coords(self):
         return random.randint(0, self.width - 1), random.randint(0, self.height - 1)
 
     def get_cell(self, mouse_pos):
         cell_x = (mouse_pos[0] - self.left) // self.cell_size
-        if cell_x < 0 or cell_x > self.width:
+        if cell_x < 0 or cell_x > self.width - 1:
             return None
         cell_y = (mouse_pos[1] - self.top) // self.cell_size
-        if cell_y < 0 or cell_y > self.height:
+        if cell_y < 0 or cell_y > self.height - 1:
             return None
         return cell_x, cell_y
 
@@ -122,6 +125,22 @@ class Bejeweled(Board):
         cell = self.get_cell(mouse_pos)
         if cell:
             self.on_click(cell)
+
+    def pre_check_matches(self):  # eliminating all matches before starting
+        rotated_board = list(map(list, zip(*self.board)))
+        for y in range(len(self.board)):
+            sy = ''.join([numbers_to_letters[x] for x in self.board[y]])  # rows
+            sx = ''.join([numbers_to_letters[x] for x in rotated_board[y]])  # columns
+            for formula in formulas:
+                if formula in sx:
+                    #  if match found, replace the first item with multiplication or division sign
+                    self.board[sx.find(formula)][y] = random.randint(0, 1)
+
+                elif formula in sy:
+                    # the same, but horizontally
+                    self.board[y][sy.find(formula)] = random.randint(0, 1)
+
+        return self.board
 
     def shift_tiles_down(self):
         board = list(map(list, zip(*self.board)))  # zipping the board to iterate its columns
@@ -213,29 +232,12 @@ class Bejeweled(Board):
                 if abs(cell[0] - self.pressed[0]) <= 1 and abs(cell[1] - self.pressed[1]) <= 1 \
                         and (abs(cell[0] - self.pressed[0]) == 0 or abs(cell[1] - self.pressed[1]) == 0):
                     game_sounds['swap'].play()
-                    self.board[self.pressed[1]][self.pressed[0]], self.board[cell[1]][cell[0]] = self.board[cell[1]][ cell[0]], self.board[self.pressed[1]][self.pressed[0]]
+                    self.board[self.pressed[1]][self.pressed[0]], self.board[cell[1]][cell[0]] = self.board[cell[1]][cell[0]], self.board[self.pressed[1]][self.pressed[0]]
                     self.pressed = ()  # cell is inactive
                 else:
                     self.pressed = ()  # cell is inactive after swapping
             else:
                 self.pressed = cell  # cell is active
-
-
-def pre_check_matches(board):  # eliminating all matches before starting
-    rotated_board = list(map(list, zip(*board)))
-    for y in range(len(board)):
-        sy = ''.join([numbers_to_letters[x] for x in board[y]])  # rows
-        sx = ''.join([numbers_to_letters[x] for x in rotated_board[y]])  # columns
-        for formula in formulas:
-            if formula in sx:
-                #  if match found, replace the first item with multiplication or division sign
-                board[sx.find(formula)][y] = random.randint(0, 1)
-
-            elif formula in sy:
-                # the same, but horizontally
-                board[y][sy.find(formula)] = random.randint(0, 1)
-
-    return board
 
 
 def eng_to_rus():  # transferring all gui items from english to russian
@@ -335,6 +337,7 @@ def game():  # game process
 
         if back.pressed:
             back.pressed = False
+            board.__init__(12, 12)  # new board construction
             main()
 
         all_sprites.draw(screen)
@@ -376,9 +379,11 @@ def game_over():  # 'game over' screen
 
         if try_again.pressed:
             try_again.pressed = False
+            board.__init__(12, 12)  # new board construction
             game()
         elif back.pressed:
             back.pressed = False
+            board.__init__(12, 12)
             main()
         elif exit.pressed:
             terminate()
@@ -435,7 +440,6 @@ def main():  # main menu
 
 
 board = Bejeweled(12, 12)
-board.board = pre_check_matches(board.board)
 
 all_sprites = pygame.sprite.Group()
 atom = AnimatedSprite(all_sprites, width // 2 + 175, height // 2 - 160)
