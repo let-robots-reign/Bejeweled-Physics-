@@ -67,6 +67,17 @@ class LangButton(pygame.sprite.Sprite):  # button changing the language
             rus_to_eng()
 
 
+class Arrow(pygame.sprite.Sprite):
+    def __init__(self, group):
+        super().__init__(group)
+        self.image = pygame.image.load('data/cursor.png')
+        self.rect = self.image.get_rect()
+
+    def update(self):
+        if pygame.mouse.get_focused():
+            self.rect.x, self.rect.y = pygame.mouse.get_pos()
+
+
 class Board:
     def __init__(self, width, height):
         self.width = width
@@ -310,9 +321,9 @@ def description():  # 'rules' menu
             back.pressed = False
             main()
 
+        gui.render(screen)
         all_sprites.draw(screen)
         all_sprites.update()
-        gui.render(screen)
         pygame.display.flip()
 
 
@@ -340,10 +351,10 @@ def game():  # game process
             board.__init__(12, 12)  # new board construction
             main()
 
-        all_sprites.draw(screen)
-        all_sprites.update()
         gui.render(screen)
         board.mainloop()
+        all_sprites.draw(screen)
+        all_sprites.update()
         pygame.display.flip()
 
 
@@ -388,9 +399,9 @@ def game_over():  # 'game over' screen
         elif exit.pressed:
             terminate()
 
+        gui.render(screen)
         all_sprites.draw(screen)
         all_sprites.update()
-        gui.render(screen)
         pygame.display.flip()
 
 
@@ -436,15 +447,18 @@ def main():  # main menu
         gui.render(screen)
         all_sprites.draw(screen)
         all_sprites.update()
+        all_sprites.move_to_front(arrow)
         pygame.display.flip()
 
 
 board = Bejeweled(12, 12)
 
-all_sprites = pygame.sprite.Group()
+all_sprites = pygame.sprite.LayeredUpdates()
 atom = AnimatedSprite(all_sprites, width // 2 + 175, height // 2 - 160)
 lang = LangButton(all_sprites, 1050, 10)
+arrow = Arrow(all_sprites)
 gui = GUI()
+pygame.mouse.set_visible(False)
 
 if __name__ == "__main__":
     main()
