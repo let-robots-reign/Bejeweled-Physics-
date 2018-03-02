@@ -16,9 +16,12 @@ symbols = {0: 'data/symbol0.png', 1: 'data/symbol1.png', 2: 'data/symbol2.png', 
 numbers_to_letters = {-1: 'X', 0: '*', 1: '/', 2: 'F', 3: 'm', 4: 'g', 5: 'I', 6: 'U', 7: 'S', 8: 't', 9: 'v', 10: 'a',
                       11: 'V', 12: 'p', 13: 'h', 14: 'N', 15: 'R', 16: 'q', 17: 'A'}  # convert board values to letters
 
-formulas = ['m*g', 'U/I', 'U/R', 'I*R', 'q/t', 'I*t', 'q/I', 'A/q', 'U*q', 'A/U', 'A/t', 'S/v', 'S/t', 'v*t', 'v/t',
-            'a*t', 'g*t', 'p*V', 'm/V', 'm/p', 'm*a', 'm*v', 'q*m', 'F/S', 'F/m', 'F/a', 'F*t', 'F*S', 'A/F', 'A/S',
-            'N*t', 'A/N', 'p*g*h', 'p*g*V', 'm*g*h', 'I*U*t']  # formulas to be in the game
+formulas = {'m*g': 'F', 'U/I': 'R', 'U/R': 'I', 'I*R': 'U', 'q/t':'I', 'I*t':'q', 'q/I':'t', 'A/q':'U', 'U*q':'A',
+            'A/U': 'q', 'A/t': 'N', 'S/v': 't', 'S/t': 'v', 'v*t': 'S', 'v/t': 'a', 'a*t': 'v(x)', 'g*t': 'v(y)',
+            'p*V': 'm', 'm/V': 'p', 'm/p': 'V', 'm*a': 'F', 'm*v': 'p', 'q*m': 'Q', 'F/S': 'P', 'F/m': 'a', 'F/a': 'm',
+            'F*t': 'p', 'F*S': 'A', 'A/F': 'S', 'A/S': 'F', 'N*t': 'A', 'A/N': 't', 'p*g*h': 'P', 'p*g*V': 'Fa',
+            'm*g*h': 'Eп', 'I*U*t': 'Q'}  # formulas to be in the game
+
 
 game_sounds = {'swap': pygame.mixer.Sound('data/swap.wav'), 'match': [pygame.mixer.Sound('data/match1.wav'),
               pygame.mixer.Sound('data/match2.wav'), pygame.mixer.Sound('data/match3.wav'),
@@ -94,6 +97,8 @@ class Bejeweled(Board):
         self.pressed = ()  # coords of the pressed cell
         self.score = 0
         self.swaps = -1  # the first swap doesn't take off points
+        self.collected = []  # list of collected formulas
+        self.frequencies = {}  # dict of frequencies
         self.font = pygame.font.Font(None, 40)
         self.score_text = None
         self.timer_text = None
@@ -142,7 +147,7 @@ class Bejeweled(Board):
         for y in range(len(self.board)):
             sy = ''.join([numbers_to_letters[x] for x in self.board[y]])  # rows
             sx = ''.join([numbers_to_letters[x] for x in rotated_board[y]])  # columns
-            for formula in formulas:
+            for formula in formulas.keys():
                 if formula in sx:
                     #  if match found, replace the first item with multiplication or division sign
                     self.board[sx.find(formula)][y] = random.randint(0, 1)
@@ -170,10 +175,12 @@ class Bejeweled(Board):
         for y in range(self.height):
             sy = ''.join([numbers_to_letters[x] for x in self.board[y]])  # rows
             sx = ''.join([numbers_to_letters[x] for x in rotated_board[y]])  # columns
-            for formula in formulas:  # finding vertical matches
+            for formula in formulas.keys():  # finding vertical matches
                 if formula in sx:
                     sound_index = random.randint(0, 4)
                     game_sounds['match'][sound_index].play()
+                    self.collected.append(formula)
+                    self.frequencies[formula] = self.frequencies.get(formula, 0) + 1
                     self.score += 10 * len(formula)
                     self.timer += 5
                     self.swaps = -1
@@ -187,6 +194,8 @@ class Bejeweled(Board):
                 elif formula in sy:
                     sound_index = random.randint(0, 4)
                     game_sounds['match'][sound_index].play()
+                    self.collected.append(formula)
+                    self.frequencies[formula] = self.frequencies.get(formula, 0) + 1
                     self.score += 10 * len(formula)
                     self.timer += 5
                     self.swaps = -1
@@ -210,6 +219,11 @@ class Bejeweled(Board):
             pygame.draw.rect(screen, pygame.Color('red'),
                              (self.pressed[0] * self.cell_size + self.left, self.pressed[1] * self.cell_size + self.top,
                               self.cell_size, self.cell_size), 3)
+
+        pygame.draw.rect(screen, pygame.Color('red'), (900, 168, 250, 640), 3)
+        for i in range(len(list(reversed(self.collected[-10:])))):
+            screen.blit(pygame.font.Font(None, 80).render('%s = %s' % (list(reversed(self.collected[-10:]))[i],
+                       formulas[list(reversed(self.collected[-10:]))[i]]), 1, pygame.Color('black')), (920, 170 + 64*i))
 
         # changing language during the game
         if lang.pressed:
@@ -239,7 +253,10 @@ class Bejeweled(Board):
             if self.pressed:
                 # swapping
                 self.swaps += 1
-                self.score -= self.swaps
+                if self.score - self.swaps > 0:
+                    self.score -= self.swaps
+                else:
+                    self.score = 0
                 if abs(cell[0] - self.pressed[0]) <= 1 and abs(cell[1] - self.pressed[1]) <= 1 \
                         and (abs(cell[0] - self.pressed[0]) == 0 or abs(cell[1] - self.pressed[1]) == 0):
                     game_sounds['swap'].play()
