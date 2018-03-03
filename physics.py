@@ -359,7 +359,7 @@ def description():  # 'rules' menu
 def game():  # game process
     gui.clear()
     gui.add_element(back)
-    board.timer = 10
+    board.timer = 31
     board.clock = pygame.time.Clock()  # clock should be initialized at this moment, not in Bejeweled __init__
 
     while True:
