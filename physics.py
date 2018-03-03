@@ -25,7 +25,8 @@ formulas = {'m*g': 'F', 'U/I': 'R', 'U/R': 'I', 'I*R': 'U', 'q/t':'I', 'I*t':'q'
 
 game_sounds = {'swap': pygame.mixer.Sound('data/swap.wav'), 'match': [pygame.mixer.Sound('data/match1.wav'),
               pygame.mixer.Sound('data/match2.wav'), pygame.mixer.Sound('data/match3.wav'),
-              pygame.mixer.Sound('data/match4.wav'), pygame.mixer.Sound('data/match5.wav')]}  # sounds to be played after an action
+              pygame.mixer.Sound('data/match4.wav'), pygame.mixer.Sound('data/match5.wav')]}
+# sounds to be played after an action
 
 
 class AnimatedSprite(pygame.sprite.Sprite):  # animated image of atom, displayed on menu screen
@@ -70,7 +71,7 @@ class LangButton(pygame.sprite.Sprite):  # button changing the language
             rus_to_eng()
 
 
-class Arrow(pygame.sprite.Sprite):
+class Arrow(pygame.sprite.Sprite):  # custom arrow
     def __init__(self, group):
         super().__init__(group)
         self.image = pygame.image.load('data/cursor.png')
@@ -123,7 +124,7 @@ class Bejeweled(Board):
                 if self.board[y][x] == -1:
                     self.board[y][x] = random.randint(2, len(symbols) - 1)  # random value from the list
 
-        self.board = self.pre_check_matches()
+        self.board = self.pre_check_matches()  # check for matches
 
     def random_coords(self):
         return random.randint(0, self.width - 1), random.randint(0, self.height - 1)
@@ -220,6 +221,7 @@ class Bejeweled(Board):
                              (self.pressed[0] * self.cell_size + self.left, self.pressed[1] * self.cell_size + self.top,
                               self.cell_size, self.cell_size), 3)
 
+        #  rect with collected formulas displayed
         pygame.draw.rect(screen, pygame.Color('red'), (900, 168, 250, 640), 3)
         for i in range(len(list(reversed(self.collected[-10:])))):
             screen.blit(pygame.font.Font(None, 80).render('%s = %s' % (list(reversed(self.collected[-10:]))[i],
@@ -271,10 +273,10 @@ class Bejeweled(Board):
 def eng_to_rus():  # transferring all gui items from english to russian
     global logo, play, rules, exit, back, fail, try_again, info  # global is unwanted, but compelled here
     logo = Label((100, 100, 1000, 750), 'Запоминай с Physjeweled!', background_color=pygame.Color('white'),
-                 font_size=70, x=290, y=250)
-    play = Button((520, 450, 140, 50), 'Играть', background_color=pygame.Color('lightblue'))
-    rules = Button((520, 520, 140, 50), 'Правила', background_color=pygame.Color('lightblue'))
-    exit = Button((520, 590, 140, 50), 'Выход', background_color=pygame.Color('lightblue'))
+                 font_size=70, x=280, y=250)
+    play = Button((530, 450, 140, 50), 'Играть', background_color=pygame.Color('lightblue'))
+    rules = Button((530, 520, 140, 50), 'Правила', background_color=pygame.Color('lightblue'))
+    exit = Button((530, 590, 140, 50), 'Выход', background_color=pygame.Color('lightblue'))
     back = Button((20, 875, 110, 50), 'Назад', background_color=pygame.Color('lightblue'))
     fail = Label((100, 100, 1000, 750), 'Игра окончена', background_color=pygame.Color('white'), font_size=100,
                  x=345, y=150)
@@ -292,7 +294,7 @@ def eng_to_rus():  # transferring all gui items from english to russian
 def rus_to_eng():  # transferring all gui items from russian to english
     global logo, play, rules, exit, back, fail, try_again, info  # global is unwanted, but compelled here
     logo = Label((100, 100, 1000, 750), 'Memorize with Physjeweled!', background_color=pygame.Color('white'),
-                 font_size=70, x=280, y=250)
+                 font_size=70, x=270, y=250)
     play = Button((550, 450, 100, 50), 'Play', background_color=pygame.Color('lightblue'))
     rules = Button((550, 520, 100, 50), 'Rules', background_color=pygame.Color('lightblue'))
     exit = Button((550, 590, 100, 50), 'Exit', background_color=pygame.Color('lightblue'))
@@ -309,6 +311,16 @@ def rus_to_eng():  # transferring all gui items from russian to english
                  'and 5 seconds of additional time, while each swipe, starting from the second, '
                  'takes off more and more points. \n    Enjoy!',
                  background_color=pygame.Color('white'), font_size=70)
+
+
+def get_best_score():  # acquiring the best score from the file
+    with open('best_score.txt', 'r') as score_list:
+        return int(score_list.read().strip())
+
+
+def rewrite_best_score(score):  # rewriting the best score
+    with open('best_score.txt', 'w') as score_list:
+        score_list.write(str(score))
 
 
 def terminate():
@@ -347,7 +359,7 @@ def description():  # 'rules' menu
 def game():  # game process
     gui.clear()
     gui.add_element(back)
-    board.timer = 31
+    board.timer = 10
     board.clock = pygame.time.Clock()  # clock should be initialized at this moment, not in Bejeweled __init__
 
     while True:
@@ -380,10 +392,18 @@ def game_over():  # 'game over' screen
     gui.add_element(fail)
     gui.add_element(try_again)
     gui.add_element(exit)
+    best_score = get_best_score()
+    if board.score > best_score:
+        rewrite_best_score(board.score)
+        best_score = board.score
     if lang.pressed:
         gui.add_element(Label((100, 200, 200, 50), 'Ваш счет: %d' % board.score, background_color=-1, x=500, y=250))
+        gui.add_element(Label((100, 200, 200, 50), 'Лучший счет: %d' % best_score, background_color=-1,
+                              x=480 - len(str(best_score)), y=315))
     else:
         gui.add_element(Label((100, 200, 200, 50), 'Your Score: %d' % board.score, background_color=-1, x=500, y=250))
+        gui.add_element(Label((100, 200, 200, 50), 'Best Score: %d' % best_score, background_color=-1,
+                              x=500 - len(str(best_score)), y=315))
 
     while True:
         screen.fill(pygame.Color('lightblue'))
@@ -399,9 +419,13 @@ def game_over():  # 'game over' screen
                 if lang.pressed:
                     gui.add_element(
                         Label((100, 200, 200, 50), 'Ваш счет: %d' % board.score, background_color=-1, x=500, y=250))
+                    gui.add_element(Label((100, 200, 200, 50), 'Лучший счет: %d' % best_score, background_color=-1,
+                                          x=480 - len(str(best_score)), y=315))
                 else:
                     gui.add_element(
                         Label((100, 200, 200, 50), 'Your Score: %d' % board.score, background_color=-1, x=500, y=250))
+                    gui.add_element(Label((100, 200, 200, 50), 'Best Score: %d' % best_score, background_color=-1,
+                                          x=500 - len(str(best_score)), y=315))
 
             gui.get_event(event)
 
@@ -471,7 +495,7 @@ def main():  # main menu
 board = Bejeweled(12, 12)
 
 all_sprites = pygame.sprite.LayeredUpdates()
-atom = AnimatedSprite(all_sprites, width // 2 + 175, height // 2 - 160)
+atom = AnimatedSprite(all_sprites, width // 2 + 160, height // 2 - 160)
 lang = LangButton(all_sprites, 1050, 10)
 arrow = Arrow(all_sprites)
 gui = GUI()
